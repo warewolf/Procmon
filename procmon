@@ -1,0 +1,77 @@
+#!/usr/bin/perl -w
+# vim: filetype=perl sw=2 foldmethod=marker commentstring=\ #\ %s
+
+eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
+
+use strict;
+use warnings;
+use XML::LibXML;
+use Getopt::Long qw(GetOptionsFromArray :config pass_through) ;
+use Pod::Usage;
+use Pod::Find qw(pod_where);
+use Procmon;
+
+my $parser = XML::LibXML->new( # {{{
+    {
+        no_network      => 1,
+        load_ext_dtd    => 0,
+        no_blanks       => 1,
+        expand_entities => 0,
+        expand_xinclude => 0,
+        ext_ent_handler => sub {
+
+            # my ($sys_id, $pub_id) = @_;
+            # warn "Received external entity: $sys_id:$pub_id";
+            "";
+        },
+    }
+); # }}}
+
+my ($file,$command);
+
+=pod 
+
+=head1 SYNOPSIS
+
+ procmon procmon.xml [commands] [arguments]
+
+=cut
+
+my $Parser_Class= $ENV{PROCMON_CLASS} || "Procmon";
+
+if (@ARGV <2) {
+  pod2usage( # {{{
+    -msg=> "Too few arguments",
+    -verbose => 99,
+    -sections => [ qw(SYNOPSIS) ],
+    -exitval=>"NOEXIT",
+  ); # }}}
+
+  pod2usage( # {{{
+    -verbose => 99,
+    -sections => [ qw(COMMANDS) ],
+    -exitval=>0,
+    -input => pod_where({-inc => 1}, $Parser_Class),
+
+  ) # }}}
+} elsif (@ARGV >= 2) { # {{{
+  ($file,$command) = splice(@ARGV,0,2);
+} # }}}
+
+
+my $procmon = $Parser_Class->new();
+
+if (! $procmon->can($command)) { # {{{
+  pod2usage(
+    -msg=> "Don't know what to do with $command",
+    -verbose => 99,
+    -sections => [ qw(SYNOPSIS COMMANDS) ],
+    -exitval=>0,
+  )
+} # }}}
+
+open(my $fh,"<",$file) or die "Couldn't open $file for reading! ($!)";
+my $xml_document = $parser->load_xml( IO => $fh );
+$procmon->doc($xml_document);
+$procmon->$command(@ARGV);
