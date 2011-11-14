@@ -7,7 +7,7 @@ eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
 use strict;
 use warnings;
 use XML::LibXML;
-use Getopt::Long qw(GetOptionsFromArray :config pass_through) ;
+use Getopt::Long qw(:config pass_through) ;
 use Pod::Usage;
 use Pod::Find qw(pod_where);
 use Procmon;
