@@ -186,37 +186,6 @@ sub operations {
   } # }}}
 } # }}}
 
-# COMMAND: skeleton {{{
-
-=begin comment
-
-Search with a freeform XPath expression.
-
-  xpath --expression="/xpath/node[criteria='selection']"
-
-=cut
-
-sub skeleton {
-  my ($self,@args) = @_;
-  my $opts = {} ;
-  my $ret = GetOptions($opts,"help|?",
-    "expression=s",
-  );
-  if ($opts->{help} || !($opts->{expression})) { # {{{
-    pod2usage(
-      -msg=> "skeleton Help ",
-      -verbose => 99,
-      -sections => [ qw(COMMANDS/skeleton) ],
-      -exitval=>0,
-      -input => pod_where({-inc => 1}, __PACKAGE__),
-    );
-  } # }}}
-
-  my $xml = $self->doc;
-  my $nodelist = $xml->findnodes($opts->{expression});
-  print map { $_->toString(2),"\n" } $nodelist->get_nodelist;
-} # }}}
-
 # COMMAND: files {{{
 
 =head2 files
@@ -372,6 +341,37 @@ sub pinfo {
 
   my $xpath = sprintf('/procmon/processlist/process[ProcessId=%d]',$opts->{pid});
   $self->_simple_dump($xpath);
+} # }}}
+
+# COMMAND: skeleton {{{
+
+=begin comment
+
+Search with a freeform XPath expression.
+
+  xpath --expression="/xpath/node[criteria='selection']"
+
+=cut
+
+sub skeleton {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?",
+    "expression=s",
+  );
+  if ($opts->{help} || !($opts->{expression})) { # {{{
+    pod2usage(
+      -msg=> "skeleton Help ",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/skeleton) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my $xml = $self->doc;
+  my $nodelist = $xml->findnodes($opts->{expression});
+  print map { $_->toString(2),"\n" } $nodelist->get_nodelist;
 } # }}}
 
 1;
