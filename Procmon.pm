@@ -391,6 +391,44 @@ sub newmodules {
 
 } # }}}
 
+# COMMAND: regsetvalue {{{
+
+=head2 regsetvalue
+
+Show all registry values set by a pid
+
+  regsetvalue -p 404
+
+=cut
+
+sub regsetvalue {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?","pid=i");
+  if ($opts->{help} ) { # {{{
+    pod2usage(
+      -msg=> "New Modules Help",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/regsetvalue) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my $compound="Operation='RegSetValue' and Result='SUCCESS'";
+  $compound.=sprintf("and PID=%d",$opts->{pid}) if $opts->{pid};
+
+  my $nodes = $self->doc->findnodes(sprintf('/procmon/eventlist/event[%s]',$compound));
+
+  foreach my $node ($nodes->get_nodelist()) {
+    my $hash;
+    ($hash->{Value}) = $node->findvalue('./Detail/child::text()') =~ m/, Data: (.+)$/;
+    @$hash{qw(PID Process_Name Path)} = map { $node->findvalue($_) } qw(./PID ./Process_Name ./Path);
+    printf("%d\t%s\t%s = %s\n",@$hash{qw(PID Process_Name Path Value)});
+  }
+
+} # }}}
+
 # COMMAND: skeleton {{{
 
 =begin comment
