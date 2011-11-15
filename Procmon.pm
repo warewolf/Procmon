@@ -204,9 +204,9 @@ sub files {
   );
   if ($opts->{help}) { # {{{
     pod2usage(
-      -msg=> "skeleton Help ",
+      -msg=> "files Help ",
       -verbose => 99,
-      -sections => [ qw(COMMANDS/skeleton) ],
+      -sections => [ qw(COMMANDS/files) ],
       -exitval=>0,
       -input => pod_where({-inc => 1}, __PACKAGE__),
     );
