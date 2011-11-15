@@ -343,6 +343,43 @@ sub pinfo {
   $self->_simple_dump($xpath);
 } # }}}
 
+# COMMAND: newmodules {{{
+
+=head2 newmodules
+
+Show all process that loaded new files as modules
+
+  newmodules
+
+=cut
+
+sub newmodules {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?",);
+  if ($opts->{help} ) { # {{{
+    pod2usage(
+      -msg=> "New Modules Help",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/newmodules) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my @written = map { $_->to_literal } $self->doc->findnodes('/procmon/eventlist/event[contains(Operation,"File") and contains(Detail,"Created")]/Path/child::text()');
+
+  my @pids = map { $_->to_literal } $self->doc->findnodes('/procmon/processlist/process/ProcessId/child::text()');
+  foreach my $pid (@pids) {
+    my @modules = map { $_->to_literal } $self->doc->findnodes(
+      sprintf('/procmon/processlist/process[ProcessId=%d]/modulelist/module/Path/child::text()',$pid)
+    );
+    my @intersection = $intersection->(\@modules,\@written);
+    printf("Pid: %d\nLoaded new modules:\n%s\n",$pid,join("\n",map { "  $_" } @intersection)) if scalar @intersection;
+  }
+
+} # }}}
+
 # COMMAND: skeleton {{{
 
 =begin comment
