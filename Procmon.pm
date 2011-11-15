@@ -258,4 +258,39 @@ Detail: ^*~~
   #print map { $_->toString(2),"\n" } $nodelist->get_nodelist;
 } # }}}
 
+# COMMAND: newfiles {{{
+
+=head2 newfiles
+
+Show file activity from a process
+
+  files --pid 404
+
+=cut
+
+sub newfiles {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?",
+    "pid=i",
+  );
+  if ($opts->{help}) { # {{{
+    pod2usage(
+      -msg=> "New Files Help ",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/newfiles) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my $xml = $self->doc;
+  my $compound = 'contains(Operation,"File") and contains(Detail,"Created")';
+  if ($opts->{pid}) {
+    $compound .= sprintf(" and PID=%d",$opts->{pid});
+  }
+  my $xpath = sprintf('/procmon/eventlist/event[%s]/Path/child::text()',$compound);
+  $self->_simple_dump($xpath);
+} # }}}
+
 1;
