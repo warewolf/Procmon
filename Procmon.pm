@@ -204,7 +204,7 @@ sub files {
   );
   if ($opts->{help}) { # {{{
     pod2usage(
-      -msg=> "files Help ",
+      -msg=> "Files Help",
       -verbose => 99,
       -sections => [ qw(COMMANDS/files) ],
       -exitval=>0,
@@ -258,7 +258,7 @@ sub newfiles {
   );
   if ($opts->{help}) { # {{{
     pod2usage(
-      -msg=> "New Files Help ",
+      -msg=> "New Files Help",
       -verbose => 99,
       -sections => [ qw(COMMANDS/newfiles) ],
       -exitval=>0,
@@ -291,7 +291,7 @@ sub selfload {
   my $ret = GetOptions($opts,"help|?",);
   if ($opts->{help} ) { # {{{
     pod2usage(
-      -msg=> "Process Info Help ",
+      -msg=> "Self Load Help ",
       -verbose => 99,
       -sections => [ qw(COMMANDS/selfload) ],
       -exitval=>0,
@@ -331,7 +331,7 @@ sub pinfo {
   );
   if ($opts->{help} || !($opts->{pid}) ) { # {{{
     pod2usage(
-      -msg=> "Process Info Help ",
+      -msg=> "Process Info Help",
       -verbose => 99,
       -sections => [ qw(COMMANDS/pinfo) ],
       -exitval=>0,
@@ -400,7 +400,7 @@ sub skeleton {
   );
   if ($opts->{help} || !($opts->{expression})) { # {{{
     pod2usage(
-      -msg=> "skeleton Help ",
+      -msg=> "Skeleton Help",
       -verbose => 99,
       -sections => [ qw(COMMANDS/skeleton) ],
       -exitval=>0,
