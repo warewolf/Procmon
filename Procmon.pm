@@ -300,4 +300,34 @@ sub newfiles {
   $self->_simple_dump($xpath);
 } # }}}
 
+# COMMAND: pinfo {{{
+
+=head2 pinfo
+
+Show process info by pid
+
+  pinfo --pid 404
+
+=cut
+
+sub pinfo {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?",
+    "pid=i",
+  );
+  if ($opts->{help} || !($opts->{pid}) ) { # {{{
+    pod2usage(
+      -msg=> "Process Info Help ",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/pinfo) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my $xpath = sprintf('/procmon/processlist/process[ProcessId=%d]',$opts->{pid});
+  $self->_simple_dump($xpath);
+} # }}}
+
 1;
