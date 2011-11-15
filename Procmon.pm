@@ -31,6 +31,12 @@ sub _simple_dump { # {{{
   print map { $_->toString(2),"\n" } $nodelist->get_nodelist;
 } # }}}
 
+my $intersection = sub (\@\@) { # {{{
+  my ($array_left,$array_right) = @_;
+  my %hash_left = map { ($_,1) } @$array_left;
+  grep { defined( $hash_left{$_} ) } @$array_right;
+}; # }}}
+
 =pod
 
 =head1 COMMANDS
@@ -298,6 +304,44 @@ sub newfiles {
   }
   my $xpath = sprintf('/procmon/eventlist/event[%s]/Path/child::text()',$compound);
   $self->_simple_dump($xpath);
+} # }}}
+
+# COMMAND: selfload {{{
+
+=head2 selfload
+
+Show process that load files they wrote as modules (libraries)
+
+  selfload --pid 404
+
+=cut
+
+sub selfload {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?",);
+  if ($opts->{help} ) { # {{{
+    pod2usage(
+      -msg=> "Process Info Help ",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/selfload) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my @pids = map { $_->to_literal } $self->doc->findnodes('/procmon/processlist/process/ProcessId/child::text()');
+  foreach my $pid (@pids) {
+    my @modules = map { $_->to_literal } $self->doc->findnodes(
+      sprintf('/procmon/processlist/process[ProcessId=%d]/modulelist/module/Path/child::text()',$pid)
+    );
+    my @written = map { $_->to_literal } $self->doc->findnodes(
+      sprintf('/procmon/eventlist/event[contains(Operation,"File") and contains(Detail,"Created") and PID=%d]/Path/child::text()',$pid)
+    );
+    my @intersection = $intersection->(\@modules,\@written);
+    printf("Pid: %d\nSelfloaded modules:\n%s\n",$pid,join("\n",map { "  $_" } @intersection)) if scalar @intersection;
+  }
+
 } # }}}
 
 # COMMAND: pinfo {{{
