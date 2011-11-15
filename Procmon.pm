@@ -50,8 +50,8 @@ Search with a freeform XPath expression.
 sub xpath {
   my ($self,@args) = @_;
   my $opts = {} ;
-  my $ret = GetOptions($opts,"expression=s","help|?");
-  if ($opts->{help} || !($opts->{expression})) { # {{{
+  my $ret = GetOptions($opts,"expression=s","event=s","help|?");
+  if ($opts->{help} || !($opts->{expression} || $opts->{event})) { # {{{
     pod2usage(
       -msg=> "XPath Help ",
       -verbose => 99,
@@ -61,9 +61,14 @@ sub xpath {
     );
   } # }}}
 
-  my $xml = $self->doc;
-  my $nodelist = $xml->findnodes($opts->{expression});
-  print map { $_->toString(2),"\n" } $nodelist->get_nodelist;
+  my $xpath;
+  if ($opts->{event}) {
+    $xpath = sprintf("/procmon/eventlist/event[%s]",$opts->{event})
+  } else {
+    $xpath = $opts->{expression};
+  }
+
+  $self->_simple_dump($xpath);
 } # }}}
 
 # COMMAND: newpids {{{ 
@@ -96,11 +101,12 @@ sub newpids {
     );
   } # }}}
 
-format STDOUT_TOP =
+($^,$~) = qw(NEWPIDS_TOP NEWPIDS);
+format NEWPIDS_TOP =
  IDx   PID  PPID Command
 .
 
-format STDOUT =
+format NEWPIDS =
 @>>> @>>>> @>>>> @*
 @$hash{qw(IDx PID PPID Command)}
 .
@@ -236,11 +242,12 @@ sub files {
   my $nodelist = $xml->findnodes($xpath);
   my $hash = {};
 
-format STDOUT_TOP =
+($^,$~) = qw(FILES_TOP FILES);
+format FILES_TOP =
  IDx  PID Process          Operation               Result
 .
 
-format STDOUT =
+format FILES =
 @>>> @>>> @<<<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<... @<<<<<<<<<<<<<<<
 @$hash{qw(IDx PID Process_Name Operation Result)}
 Path: @*
