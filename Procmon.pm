@@ -388,6 +388,8 @@ Search with a freeform XPath expression.
 
   xpath --expression="/xpath/node[criteria='selection']"
 
+=end
+
 =cut
 
 sub skeleton {
