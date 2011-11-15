@@ -246,7 +246,7 @@ Detail: ^*~~
 
 Show file activity from a process
 
-  files --pid 404
+  newfiles --pid 404
 
 =cut
 
