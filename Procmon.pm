@@ -172,7 +172,18 @@ sub operations {
   my ($self,@args) = @_;
   my $xpath;
   my $opts = {} ;
-  my $ret = GetOptions($opts,"pid=i","unique!");
+  my $ret = GetOptions($opts,"pid=i","unique!","help");
+
+  if ($opts->{help}) { # {{{
+    pod2usage(
+      -msg=> "Operation Help",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/operation) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
   if ($opts->{pid}) {
     $xpath = sprintf('/procmon/eventlist/event[PID=%d]/Operation/child::text()',$opts->{pid});
   } else {
