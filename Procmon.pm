@@ -21,14 +21,14 @@ sub new { # {{{
 sub _simple_dump_unique { # {{{
   my ($self,$xpath) = @_;
   my $nodelist = $self->doc->findnodes($xpath);
-  my %hash =  map { $_->toString(2) => 1 } $nodelist->get_nodelist;
+  my %hash =  map { $_->toString(1) => 1 } $nodelist->get_nodelist;
   print map { "$_\n" } keys %hash;
 } # }}}
 
 sub _simple_dump { # {{{
   my ($self,$xpath) = @_;
   my $nodelist = $self->doc->findnodes($xpath);
-  print map { $_->toString(2),"\n" } $nodelist->get_nodelist;
+  print map { $_->toString(1),"\n" } $nodelist->get_nodelist;
 } # }}}
 
 my $intersection = sub (\@\@) { # {{{
@@ -50,13 +50,14 @@ my $intersection = sub (\@\@) { # {{{
 Search with a freeform XPath expression.
 
   xpath --expression="/xpath/node[criteria='selection']"
+  xpath --event="/xpath/node[criteria='selection']" --value="xpath"
 
 =cut
 
 sub xpath {
   my ($self,@args) = @_;
   my $opts = {} ;
-  my $ret = GetOptions($opts,"expression=s","event=s","help|?");
+  my $ret = GetOptions($opts,"expression=s","event=s","value=s","help|?");
   if ($opts->{help} || !($opts->{expression} || $opts->{event})) { # {{{
     pod2usage(
       -msg=> "XPath Help ",
@@ -69,12 +70,57 @@ sub xpath {
 
   my $xpath;
   if ($opts->{event}) {
-    $xpath = sprintf("/procmon/eventlist/event[%s]",$opts->{event})
+    $xpath = sprintf("/procmon/eventlist/event[%s]%s",$opts->{event},$opts->{value})
   } else {
     $xpath = $opts->{expression};
   }
 
   $self->_simple_dump($xpath);
+} # }}}
+
+# COMMAND: pids {{{
+
+=head2 pids
+
+Display all pids present in a log file.
+
+  pids
+
+=cut
+
+sub pids {
+  my ($self,@args) = @_;
+
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?");
+
+  my $xpath = '/procmon/processlist/process';
+  my $nodelist = $self->doc->findnodes($xpath);
+  my $hash;
+
+  if ($opts->{help}) { # {{{
+    pod2usage(
+      -msg => "PIDS help",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/pids) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+($^,$~) = qw(PIDS_TOP PIDS);
+format PIDS_TOP =
+ IDx   PID  PPID Command
+.
+
+format PIDS =
+@>>> @>>>> @>>>> @*
+@$hash{qw(IDx PID PPID Command)}
+.
+  foreach my $node ($nodelist->get_nodelist) {
+    @$hash{qw(IDx PID PPID Command)} = map { $node->findvalue($_) } qw(./ProcessIndex ./ProcessId ./ParentProcessId CommandLine);
+    write;
+  }
 } # }}}
 
 # COMMAND: newpids {{{ 
@@ -224,29 +270,19 @@ sub files {
   } # }}}
 
   my $xml = $self->doc;
-  my $xpath = sprintf('/procmon/eventlist/event[PID=%d and contains(./Operation,"File")]',$opts->{pid});
+  my $xpath;
+  if ($opts->{pid}) {
+    $xpath = sprintf('/procmon/eventlist/event[PID=%d and contains(./Operation,"File")]',$opts->{pid});
+  } else {
+    $xpath = sprintf('/procmon/eventlist/event[contains(./Operation,"File")]',$opts->{pid});
+  }
   my $nodelist = $xml->findnodes($xpath);
   my $hash = {};
 
-($^,$~) = qw(FILES_TOP FILES);
-format FILES_TOP =
- IDx  PID Process          Operation               Result
-.
-
-format FILES =
-@>>> @>>> @<<<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<... @<<<<<<<<<<<<<<<
-@$hash{qw(IDx PID Process_Name Operation Result)}
-Path: @*
-$hash->{Path}
-Detail: ^*~~
-@$hash{Detail}
----------------------------------------------------------------------------
-
-.
-
   foreach my $node ($nodelist->get_nodelist) {
-    @$hash{qw(IDx PID Process_Name Operation Result Path Detail)} = map { $node->findvalue($_) } qw(./ProcessIndex ./PID ./Process_Name ./Operation ./Result ./Path ./Detail);
-    write;
+    @$hash{qw(index pid processname operation result path detail)} = map { $node->findvalue($_) } qw(./ProcessIndex ./PID ./Process_Name ./Operation ./Result ./Path ./Detail);
+    $hash->{detail} =~ s/(?:,\s*)?([\w\s+\/]+[^:]):/\n  $1:\t/g;
+    printf("%d\t%d\t%s\t%s\t%s\t%s\n-----------------------------------------%s\n\n\n",@$hash{qw(index pid processname operation result path detail)});
   }
   #print map { $_->toString(2),"\n" } $nodelist->get_nodelist;
 } # }}}
@@ -427,6 +463,76 @@ sub regsetvalue {
     printf("%d\t%s\t%s = %s\n",@$hash{qw(PID Process_Name Path Value)});
   }
 
+} # }}}
+
+# COMMAND: overwritten {{{
+
+=head2 overwritten
+
+Show file activity from a process
+
+  overwritten --pid 404
+
+=cut
+
+sub overwritten {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?",
+    "pid=i",
+  );
+  if ($opts->{help}) { # {{{
+    pod2usage(
+      -msg=> "New Files Help",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/overwritten) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my $xml = $self->doc;
+  my $compound = 'contains(Operation,"File") and contains(Detail,"OpenResult: Overwritten")';
+  if ($opts->{pid}) {
+    $compound .= sprintf(" and PID=%d",$opts->{pid});
+  }
+  my $xpath = sprintf('/procmon/eventlist/event[%s]/Path/child::text()',$compound);
+  $self->_simple_dump($xpath);
+} # }}}
+
+# COMMAND: writefile {{{
+
+=head2 writefile
+
+Show file activity from a process
+
+  writefile --pid 404
+
+=cut
+
+sub writefile {
+  my ($self,@args) = @_;
+  my $opts = {} ;
+  my $ret = GetOptions($opts,"help|?",
+    "pid=i",
+  );
+  if ($opts->{help}) { # {{{
+    pod2usage(
+      -msg=> "WriteFile Help",
+      -verbose => 99,
+      -sections => [ qw(COMMANDS/writefile) ],
+      -exitval=>0,
+      -input => pod_where({-inc => 1}, __PACKAGE__),
+    );
+  } # }}}
+
+  my $xml = $self->doc;
+  my $compound = 'Operation="WriteFile"';
+  if ($opts->{pid}) {
+    $compound .= sprintf(" and PID=%d",$opts->{pid});
+  }
+  my $xpath = sprintf('/procmon/eventlist/event[%s]/Path/child::text()',$compound);
+  $self->_simple_dump_unique($xpath);
 } # }}}
 
 # COMMAND: skeleton {{{
